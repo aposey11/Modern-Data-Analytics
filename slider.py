@@ -62,7 +62,7 @@ hour = st.sidebar.slider("Hour of day", 0, 23, 8)      # min, max, default
 # derive the remaining time features automatically from the chosen date
 day_of_week = pd.Timestamp(dt).dayofweek   # 0 = Monday, 6 = Sunday
 month       = pd.Timestamp(dt).month       # 1–12
-is_weekend  = int(day_of_week >= 5)        # 1 if Saturday or Sunday, else 0
+
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌤️ Weather conditions")
@@ -77,14 +77,13 @@ cloud_cover   = st.sidebar.slider("Cloud cover (%)",       0,  100,   30)
 # ------Build feature matrix-----
 # the model needs one row per site, with all 10 features
 # we start from site_id (which differs per row) and fill the rest with the same slider values for every site
-features = ["site_id", "hour", "day_of_week", "month", "is_weekend",
+features = ["site_id", "lat", "lon", "hour", "day_of_week", "month", 
             "temperature", "humidity", "precipitation", "wind_speed", "cloud_cover"]
 
-X = sites[["site_id"]].copy()
+X = sites[["site_id", "lat", "lon"]].copy()
 X["hour"]          = hour
 X["day_of_week"]   = day_of_week
 X["month"]         = month
-X["is_weekend"]    = is_weekend
 X["temperature"]   = temperature
 X["humidity"]      = humidity
 X["precipitation"] = precipitation
@@ -131,7 +130,7 @@ fig = px.scatter_map(
         "lon": False
     },
     labels={"predicted_cyclists": "Cyclists"},
-    map_style="open-street-map"
+    map_style="carto-positron"
 )
 
 fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=600)
