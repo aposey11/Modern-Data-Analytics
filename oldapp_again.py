@@ -9,12 +9,18 @@ import geodatasets
 import pydeck as pdk
 import streamlit as st
 
-starting_view = pdk.ViewState(latitude= 5, longitude= 50, zoom= 10, max_zoom= 16)
+sites = pd.read_csv('sites.csv', names=['siteid', 'site_nr', 'longitude', 'latitude', 'name', 'region', 'direction_number', 'district', 'municipality', 'interval', 'date'])
 
-site_locations = pdk.Layer(
+
+
+"""""
+BELOW IS MY USE OF STREAMLIT INFO
+"""""
+
+points = pdk.Layer(
     'ScatterplotLayer',
-    sites[['longitude', 'latitude']],
-    auto_highlight=True,
+    data=sites,
+    id='',
     get_position=['longitude', 'latitude'],
     get_radius=1000,
     get_fill_color=[100,100,200,0],
