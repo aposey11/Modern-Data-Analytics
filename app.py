@@ -1,11 +1,4 @@
 import pandas as pd
-#from sklearn import 
-import os
-from sklearn.cluster import KMeans
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
-import geodatasets
 import pydeck as pdk
 import streamlit as st
 
