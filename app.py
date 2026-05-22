@@ -22,7 +22,7 @@ points = pdk.Layer(
 )
 
 view_point = pdk.ViewState(
-    latitude=51, longitude=4.3, controller=True, zoom=7.3
+    latitude=51, longitude=4.3, controller=True, zoom=7.1
 )
 
 
@@ -33,8 +33,15 @@ chart = pdk.Deck(
     tooltip={'text': 'Id: {siteid}\nCluster: {cluster}'},
     
 )
-st.sidebar.selectbox('Try and select an option?', ['Yes', 'No', 'Maybe'])
+st.title('Cluster Analysis')
+#st.sidebar.selectbox('Try and select an option?', ['Yes', 'No', 'Maybe'])
 
-event = st.pydeck_chart(chart, on_select='rerun', selection_mode='multi-object')
+col1, col2 = st.columns([12,2], gap='small')
 
+with col1:
+    st.pydeck_chart(chart, on_select='rerun', selection_mode='multi-object')
+    st.text('Cluster 0 indicates high traffic counts particularly in the morning\nCluster 1 represents low overall traffic counts\nCluster 2 represents a combination')
+
+with col2:
+    st.text('Cluster 0\n\nCluster 1\n\nCluster2')
 #event.selection
