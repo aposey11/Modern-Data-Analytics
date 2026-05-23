@@ -13,10 +13,13 @@ st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hov
 # without caching it'd reload the data every time, so there'd be a lot of lag between each animated frame
 @st.cache_data
 def load_data():
-    # I could do this manually in the CSV too but a full implementation would use way more data files
+    # I could do this manually in the CSVs too but that's maybe not a sustainable solution...?
+    headers_data = ["site_ID", "direction", "type", "time_from", "time_to", "count"]
     headers_sites = ["site_ID", "site_no", "longitude", "latitude", "name", "domain", "road_no", "road_dist_no", "municipality", "interval_length", "installed_since"]
-    data_df = pd.read_parquet(os.path.join(_DIR, 'Data', 'data-2024-08.parquet'))
-    sites_df = pd.read_csv(os.path.join(_DIR, 'Data', 'sites.csv'), header=None, names=headers_sites)
+
+    #we have more data available than this, but it takes a lot of time to load at the start; 2025+26 alone takes over 40s, full 2019-26 about 90s
+    data_df = pd.read_csv('data_2026.csv', header = None, names=headers_data)
+    sites_df = pd.read_csv('sites.csv', header = None, names=headers_sites)
 
     merged_df = pd.merge(data_df, sites_df[['site_ID', 'longitude', 'latitude', 'name']], on='site_ID').dropna(subset=['latitude', 'longitude'])
 
