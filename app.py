@@ -14,11 +14,11 @@ points = pdk.Layer(
     data=sites,
     id='datapoints',
     get_position=['longitude', 'latitude'],
-    get_color='[color1, color2, color3]',
+    get_color='[color4, color5, color6]',
     pickable=True,
     auto_highlight=True,
     opacity=.3,
-    get_radius='average_hour_count*75'
+    get_radius=1000,
 )
 
 view_point = pdk.ViewState(
@@ -35,7 +35,7 @@ chart = pdk.Deck(
 )
 st.set_page_config(layout='wide')
 st.title('Cluster Analysis')
-st.subheader('Commuting patterns and averages through the clusters')
+st.subheader('Commuting Patterns and Averages Through the Clusters')
 #st.sidebar.selectbox('Try and select an option?', ['Yes', 'No', 'Maybe'])
 
 col1, col2 = st.columns([12,2], gap='small')
