@@ -4,8 +4,6 @@ import pydeck as pdk
 import time
 import os
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
-
 st.set_page_config(page_title="Cycling Traffic Flow", layout="wide")
 st.markdown("<h1 style='text-align: center'>Live Cycling Traffic</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hover over any sensor dot on the map to see its exact IN and OUT counts.</i></p>", unsafe_allow_html=True)
@@ -13,12 +11,17 @@ st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hov
 # without caching it'd reload the data every time, so there'd be a lot of lag between each animated frame
 @st.cache_data
 def load_data():
-    # I could do this manually in the CSV too but a full implementation would use way more data files
     headers_sites = ["site_ID", "site_no", "longitude", "latitude", "name", "domain", "road_no", "road_dist_no", "municipality", "interval_length", "installed_since"]
-    data_df = pd.read_parquet(os.path.join(_DIR, 'Data', 'data-2024-08.parquet'))
-    sites_df = pd.read_csv(os.path.join(_DIR, 'Data', 'sites.csv'), header=None, names=headers_sites)
+    data_folder = "Data"
+    
+    # only loading data from whichever year the user chooses; having everything from 2019 makes loading last about 40 seconds
+    year_from = 2025
+    data_files = [file for file in os.listdir(data_folder) if int(file.split("-")[1]) >= year_from]
+    data_df = pd.concat([pd.read_parquet(os.path.join(data_folder, file)) for file in data_files], ignore_index=True)
+    sites_df = pd.read_csv('sites.csv', header=None, names=headers_sites)
 
     merged_df = pd.merge(data_df, sites_df[['site_ID', 'longitude', 'latitude', 'name']], on='site_ID').dropna(subset=['latitude', 'longitude'])
+    merged_df = merged_df.loc[merged_df['type'] == 'FIETSERS']
 
     # Round timestamps to the nearest hour and aggregate counts for each site/direction/hour
     merged_df['time_from'] = pd.to_datetime(merged_df['time_from']).dt.floor('h')
@@ -90,7 +93,7 @@ with map_col:
 
     map_dots = current_data.drop_duplicates('site_ID').merge(all_counts, on='name')
     # the top 5 sites get big bright dots, the rest are small and faded out
-    map_dots['dot_color'] = map_dots['name'].apply(lambda x: [255, 215, 0, 255] if x in top_5_names else [255, 255, 255, 100])
+    map_dots['dot_color'] = map_dots['name'].apply(lambda x: [181, 148, 16] if x in top_5_names else [211,211,211])
     map_dots['dot_radius'] = map_dots['name'].apply(lambda x: 800 if x in top_5_names else 100)
  
     site_layer = pdk.Layer("ScatterplotLayer",data=map_dots, get_position=["longitude", "latitude"], get_radius="dot_radius", radius_min_pixels=3, get_fill_color="dot_color", pickable=True)
@@ -112,15 +115,15 @@ with map_col:
     top_5_text['text_lat'] = top_5_text['latitude'] + top_5_text['height_offset'] 
     top_5_text['display_label'] = top_5_text.apply(lambda row: f"{row['rank_str']}: {row['name']}\nIN: {int(row['IN'])} | OUT: {int(row['OUT'])}", axis=1)
 
-    text_layer = pdk.Layer("TextLayer", data=top_5_text, get_position=["longitude", "text_lat"], get_text="display_label", get_size=16, get_color=[255, 215, 0])
+    text_layer = pdk.Layer("TextLayer", data=top_5_text, get_position=["longitude", "text_lat"], get_text="display_label", get_size=16, get_color=[59, 59, 59])
 
     # these starting params should give the best view of Flanders to include all sites and exclude most other places nearby
     view_state = pdk.ViewState(latitude=51.1, longitude=4.15, zoom=8)
-    final_map = pdk.Deck(layers=[site_layer, text_layer], initial_view_state=view_state, map_style="dark", tooltip={"html": "<b style='font-size: 14px;'>{name}</b><br/>IN: <b>{IN}</b> | OUT: <b>{OUT}</b>"})
+    final_map = pdk.Deck(layers=[site_layer, text_layer], initial_view_state=view_state, map_style="light", tooltip={"html": "<b style='font-size: 14px;'>{name}</b><br/>IN: <b>{IN}</b> | OUT: <b>{OUT}</b>"})
     st.pydeck_chart(final_map)
 
 # actual animation loop
 if st.session_state.is_playing:
-    time.sleep(0.2) # can reduce to make it go even faster
+    time.sleep(0.1)
     st.session_state.time_index = (st.session_state.time_index + 1) % len(timestamps) # basically resets to the beginning after reaching the last possible unique timestamp
     st.rerun()
