@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import time
+import os
+
+_DIR = os.path.dirname(os.path.abspath(__file__))
 
 st.set_page_config(page_title="Cycling Traffic Flow", layout="wide")
 st.markdown("<h1 style='text-align: center'>Live Cycling Traffic</h1>", unsafe_allow_html=True)
@@ -11,10 +14,9 @@ st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hov
 @st.cache_data
 def load_data():
     # I could do this manually in the CSV too but a full implementation would use way more data files
-    headers_data = ["site_ID", "direction", "type", "time_from", "time_to", "count"]
     headers_sites = ["site_ID", "site_no", "longitude", "latitude", "name", "domain", "road_no", "road_dist_no", "municipality", "interval_length", "installed_since"]
-    data_df = pd.read_csv('data-2024-08.csv', header = None, names=headers_data)
-    sites_df = pd.read_csv('sites.csv', header = None, names=headers_sites)
+    data_df = pd.read_parquet(os.path.join(_DIR, 'Data', 'data-2024-08.parquet'))
+    sites_df = pd.read_csv(os.path.join(_DIR, 'Data', 'sites.csv'), header=None, names=headers_sites)
 
     merged_df = pd.merge(data_df, sites_df[['site_ID', 'longitude', 'latitude', 'name']], on='site_ID').dropna(subset=['latitude', 'longitude'])
 
