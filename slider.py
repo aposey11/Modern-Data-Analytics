@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import pickle
+from xgboost import XGBRegressor
 import numpy as np
 from datetime import datetime
 
@@ -12,11 +12,11 @@ st.title("🚴 Weather-Cycling Simulation Map")
 
 # ---------Load model--------
 # @st.cache_resource makes sure the model is only loaded once, not every time the user moves a slider (@)
-# rb- binary; open the pickled file
 @st.cache_resource
 def load_model():
-    with open("weather_bike_model.pkl", "rb") as f:
-        return pickle.load(f)
+    model = XGBRegressor()
+    model.load_model("weather_bike_model.json")
+    return model
 
 model = load_model()
 
