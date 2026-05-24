@@ -7,9 +7,7 @@ __pycache__/
 
 # Large data files — obtain from AWV and Statbel directly
 data-*.csv
-sites.csv
 richtingen.csv
 
 
 # Generated intermediate datasets — produced by running the pipeline scripts
-

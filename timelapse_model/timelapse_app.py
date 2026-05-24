@@ -4,32 +4,58 @@ import pydeck as pdk
 import time
 import os
 
+_DIR = os.path.dirname(os.path.abspath(__file__))
+
 st.set_page_config(page_title="Cycling Traffic Flow", layout="wide")
 st.markdown("<h1 style='text-align: center'>Live Cycling Traffic</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hover over any sensor dot on the map to see its exact IN and OUT counts.</i></p>", unsafe_allow_html=True)
 
-# without caching it'd reload the data every time, so there'd be a lot of lag between each animated frame
-@st.cache_data
-def load_data():
-    headers_sites = ["site_ID", "site_no", "longitude", "latitude", "name", "domain", "road_no", "road_dist_no", "municipality", "interval_length", "installed_since"]
-    data_folder = "Parquet Data"
-    
-    # only loading data from whichever year the user chooses; having everything from 2019 makes loading last about 40 seconds
-    year_from = 2025
-    data_files = [file for file in os.listdir(data_folder) if int(file.split("-")[1]) >= year_from]
-    data_df = pd.concat([pd.read_parquet(os.path.join(data_folder, file)) for file in data_files], ignore_index=True)
-    sites_df = pd.read_csv('sites.csv', header=None, names=headers_sites)
+def build_processed_data():
+    """Pre-aggregate raw parquet files into one file per year for fast loading.
+    Runs automatically on first launch if Processed Data/ doesn't exist yet."""
+    headers_sites = ["site_ID", "site_no", "longitude", "latitude", "name", "domain",
+                     "road_no", "road_dist_no", "municipality", "interval_length", "installed_since"]
+    data_folder = os.path.join(_DIR, "Data")
+    processed_folder = os.path.join(_DIR, "Processed Data")
+    os.makedirs(processed_folder, exist_ok=True)
 
-    merged_df = pd.merge(data_df, sites_df[['site_ID', 'longitude', 'latitude', 'name']], on='site_ID').dropna(subset=['latitude', 'longitude'])
+    sites_df = pd.read_csv(os.path.join(_DIR, "sites.csv"), header=None, names=headers_sites)
+    all_files = sorted(f for f in os.listdir(data_folder) if f.endswith(".parquet"))
+    years = sorted({int(f.split("-")[1]) for f in all_files})
 
-    # Round timestamps to the nearest hour and aggregate counts for each site/direction/hour
-    merged_df['time_from'] = pd.to_datetime(merged_df['time_from']).dt.floor('h')
-    merged_df = merged_df.groupby(['site_ID', 'direction', 'longitude', 'latitude', 'name', 'time_from'])['count'].sum().reset_index()
-    merged_df['time_from'] = merged_df['time_from'].dt.strftime('%Y-%m-%d %H:%M:%S') 
-    
-    return merged_df
+    for year in years:
+        out_path = os.path.join(processed_folder, f"data-{year}.parquet")
+        if os.path.exists(out_path):
+            continue
+        files = [f for f in all_files if int(f.split("-")[1]) == year]
+        df = pd.concat(
+            [pd.read_parquet(os.path.join(data_folder, f), columns=["site_ID", "direction", "time_from", "count"]) for f in files],
+            ignore_index=True
+        )
+        df = pd.merge(df, sites_df[["site_ID", "longitude", "latitude", "name"]], on="site_ID").dropna(subset=["latitude", "longitude"])
+        df["time_from"] = pd.to_datetime(df["time_from"]).dt.floor("h")
+        df = df.groupby(["site_ID", "direction", "longitude", "latitude", "name", "time_from"])["count"].sum().reset_index()
+        df["time_from"] = df["time_from"].dt.strftime("%Y-%m-%d %H:%M:%S")
+        df.to_parquet(out_path, index=False)
 
-df = load_data()
+# run once on first launch — skips years that are already processed
+processed_folder = os.path.join(_DIR, "Processed Data")
+if not os.path.isdir(processed_folder):
+    with st.spinner("First launch: pre-processing data for faster future loads..."):
+        build_processed_data()
+
+# cached per year_from value — switching years reuses the cache instead of reloading
+@st.cache_data(show_spinner="Loading data...")
+def load_data(year_from: int):
+    processed_folder = os.path.join(_DIR, "Processed Data")
+    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet") and int(f.split("-")[1].split(".")[0]) >= year_from]
+    return pd.concat([pd.read_parquet(os.path.join(processed_folder, f)) for f in data_files], ignore_index=True)
+
+# year selector in the sidebar — each unique value is cached separately by @st.cache_data
+available_years = sorted({int(f.split("-")[1]) for f in os.listdir(os.path.join(_DIR, "Data"))})
+year_from = st.sidebar.selectbox("Show data from year", available_years, index=len(available_years) - 2)
+
+df = load_data(year_from)
 timestamps = sorted(df['time_from'].unique())
 
 # these variables perist across reruns
