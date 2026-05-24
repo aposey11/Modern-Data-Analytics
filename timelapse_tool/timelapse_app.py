@@ -75,7 +75,7 @@ col_play, col_date, col_hour = st.columns([2, 3, 7])
 
 with col_play:
     st.markdown("<br>", unsafe_allow_html=True) # otherwise the button goes above the other two controls and looks weird
-    if st.button("Play / Pause", use_container_width=True):
+    if st.button("Play / Pause", width='stretch'):
         st.session_state.is_playing = not st.session_state.is_playing
         st.rerun()
         
