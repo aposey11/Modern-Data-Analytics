@@ -11,7 +11,7 @@ def home():
     )
     st.divider()
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.subheader("🌤️ Weather Simulation")
@@ -34,6 +34,13 @@ def home():
             "weather, traffic volume, and temporal patterns across Flanders."
         )
 
+    with col4:
+        st.subheader("🔵 Cluster Analysis")
+        st.write(
+            "Explore clustering of Flemish cycling monitoring sites based on "
+            "traffic patterns and site characteristics."
+        )
+
     st.divider()
     st.caption("Use the sidebar to navigate between tools.")
 
@@ -41,7 +48,8 @@ def home():
 pg = st.navigation([
     st.Page(home, title="Home", icon="🏠", default=True),
     st.Page("weather_model/slider.py", title="Weather Simulation", icon="🌤️"),
-    st.Page("timelapse_model/timelapse_app.py", title="Cycling Timelapse", icon="🚴"),
+    st.Page("timelapse_tool/timelapse_app.py", title="Cycling Timelapse", icon="🚴"),
     st.Page("accident_model/07_GTRI_dashboard.py", title="Accident Risk", icon="⚠️"),
+    st.Page("model_cluster/app.py", title="Cluster Analysis", icon="🔵"),
 ])
 pg.run()

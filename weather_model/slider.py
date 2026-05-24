@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import pickle
+from xgboost import XGBRegressor
 import numpy as np
 import os
 from datetime import datetime
@@ -18,8 +18,9 @@ st.title("🚴 Weather-Cycling Simulation Map")
 # rb- binary; open the pickled file
 @st.cache_resource
 def load_model():
-    with open(os.path.join(_DIR, "weather_bike_model.pkl"), "rb") as f:
-        return pickle.load(f)
+    model = XGBRegressor()
+    model.load_model(os.path.join(_DIR, "weather_bike_model.ubj"))
+    return model
 
 model = load_model()
 
@@ -137,7 +138,7 @@ fig = px.scatter_map(
 )
 
 fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=600)
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width='stretch')
 
 # some notes:
 # let's say if hour is 8am = all counts from 8:00 → 8:59 (4 intervals of 15 min each, summed up)
