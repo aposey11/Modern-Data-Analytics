@@ -4,8 +4,6 @@ import pydeck as pdk
 import time
 import os
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
-
 st.set_page_config(page_title="Cycling Traffic Flow", layout="wide")
 st.markdown("<h1 style='text-align: center'>Live Cycling Traffic</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hover over any sensor dot on the map to see its exact IN and OUT counts.</i></p>", unsafe_allow_html=True)
@@ -13,12 +11,13 @@ st.markdown("<p style='text-align: center; color: grey; font-size: 16px;'><i>Hov
 # without caching it'd reload the data every time, so there'd be a lot of lag between each animated frame
 @st.cache_data
 def load_data():
-    # I could do this manually in the CSVs too but that's maybe not a sustainable solution...?
+    # could do this manually in a CSV too but that's not a sustainable solution
     headers_data = ["site_ID", "direction", "type", "time_from", "time_to", "count"]
     headers_sites = ["site_ID", "site_no", "longitude", "latitude", "name", "domain", "road_no", "road_dist_no", "municipality", "interval_length", "installed_since"]
-
+    data_folder = "Raw Data"
     #we have more data available than this, but it takes a lot of time to load at the start; 2025+26 alone takes over 40s, full 2019-26 about 90s
-    data_df = pd.read_csv('data_2026.csv', header = None, names=headers_data)
+    data_files = [file for file in os.listdir(data_folder) if file.startswith("data-2026-") and file.endswith(".csv")]
+    data_df = pd.concat([pd.read_csv(os.path.join(data_folder, file), header=None, names=headers_data) for file in data_files])
     sites_df = pd.read_csv('sites.csv', header = None, names=headers_sites)
 
     merged_df = pd.merge(data_df, sites_df[['site_ID', 'longitude', 'latitude', 'name']], on='site_ID').dropna(subset=['latitude', 'longitude'])
