@@ -3,7 +3,10 @@ import pandas as pd
 import plotly.express as px
 import pickle
 import numpy as np
+import os
 from datetime import datetime
+
+_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 #set_page_config — configures the browser tab; wide layout- whole page
@@ -15,7 +18,7 @@ st.title("🚴 Weather-Cycling Simulation Map")
 # rb- binary; open the pickled file
 @st.cache_resource
 def load_model():
-    with open(r"C:\Users\Admin\vscode\python\cycling project\weather_bike_model.pkl", "rb") as f:
+    with open(os.path.join(_DIR, "weather_bike_model.pkl"), "rb") as f:
         return pickle.load(f)
 
 model = load_model()
@@ -39,7 +42,7 @@ def load_sites():
     "datum_van"
  ]
     sites = pd.read_csv(
-        r"C:\Users\Admin\Desktop\Master Stats\Modern Analytics & Python\Weather Regression\sites.csv",
+        os.path.join(_DIR, "sites.csv"),
         names=cols,
         header=None
     )

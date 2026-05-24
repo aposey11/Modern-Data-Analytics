@@ -9,6 +9,17 @@ import geodatasets
 import pydeck as pdk
 import streamlit as st
 
+with open('sites.csv', 'r') as f:
+    first_line = f.readline()
+if 'git-lfs' in first_line:
+    st.error("sites.csv has not been downloaded from Git LFS. Run `git lfs pull` in the weather_model folder and restart the app.")
+    st.stop()
+
+sites = pd.read_csv('sites.csv', header=None, names=[
+    'index', 'id', 'longitude', 'latitude', 'name', 'organization',
+    'code1', 'code2', 'city', 'interval', 'date'
+])
+
 starting_view = pdk.ViewState(latitude= 5, longitude= 50, zoom= 10, max_zoom= 16)
 
 site_locations = pdk.Layer(
