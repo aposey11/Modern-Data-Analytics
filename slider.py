@@ -77,10 +77,10 @@ cloud_cover   = st.sidebar.slider("Cloud cover (%)",       0,  100,   30)
 # ------Build feature matrix-----
 # the model needs one row per site, with all 10 features
 # we start from site_id (which differs per row) and fill the rest with the same slider values for every site
-features = ["site_id", "lat", "lon", "hour", "day_of_week", "month", 
+features = ["lat", "lon", "hour", "day_of_week", "month", 
             "temperature", "humidity", "precipitation", "wind_speed", "cloud_cover"]
 
-X = sites[["site_id", "lat", "lon"]].copy()
+X = sites[["lat", "lon"]].copy()
 X["hour"]          = hour
 X["day_of_week"]   = day_of_week
 X["month"]         = month

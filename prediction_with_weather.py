@@ -117,12 +117,12 @@ cloud_cover = weather["cloud_cover"]
 # Build the reature matrix 
 # Define feature order (must match what the model was trained on)
 features = [
-    "site_id", "lat", "lon", "hour", "day_of_week", "month",
+    "lat", "lon", "hour", "day_of_week", "month",
     "temperature", "humidity", "precipitation", "wind_speed", "cloud_cover"
 ]
 
 # Start with site info
-X = sites[["site_id", "lat", "lon"]].copy()
+X = sites[["lat", "lon"]].copy()
 
 # Add time features derived from the selected datetime
 X["hour"] = selected_hour
