@@ -3,20 +3,23 @@ import pandas as pd
 import numpy as np
 import joblib
 import folium
+import os
 from streamlit_folium import st_folium
 import branca.colormap as cm
+
+_DIR = os.path.dirname(os.path.abspath(__file__))
 
 st.set_page_config(page_title="GTRI Flanders Risk Map", layout="wide")
 
 @st.cache_resource
 def load_resources():
-    artifacts     = joblib.load("GTRI_model_artifacts.pkl")
+    artifacts     = joblib.load(os.path.join(_DIR, "GTRI_model_artifacts.pkl"))
     model         = artifacts['model']
     baseline_risk = artifacts['baseline_risk']
     feature_names = artifacts['feature_names']
     metrics       = artifacts.get('metrics', {})
 
-    df_sites = pd.read_parquet("gtri_site_spatial_features.parquet")
+    df_sites = pd.read_parquet(os.path.join(_DIR, "gtri_site_spatial_features.parquet"))
     if 'long' in df_sites.columns and 'lon' not in df_sites.columns:
         df_sites = df_sites.rename(columns={'long': 'lon'})
     return model, df_sites, baseline_risk, feature_names, metrics
