@@ -40,7 +40,7 @@ def home():
 
     card_items = "".join(
         f"""
-        <a class="nav-card" href="{c['href']}">
+        <a class="nav-card" href="{c['href']}" onclick="window.parent.location.href='{c['href']}'; return false;">
             <div class="nav-card-icon">{c['icon']}</div>
             <div class="nav-card-title">{c['title']}</div>
             <div class="nav-card-desc">{c['desc']}</div>

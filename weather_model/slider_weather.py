@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 from xgboost import XGBRegressor
@@ -112,6 +111,6 @@ def show():
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=650)
     st.plotly_chart(fig, width='stretch', config={"responsive": True})
     # Dispatch a resize event so Plotly redraws at the correct width on first load
-    components.html("<script>window.parent.dispatchEvent(new Event('resize'));</script>", height=0)
+    st.iframe("<script>window.parent.dispatchEvent(new Event('resize'));</script>", height=0)
 
     # let's say if hour is 8am = all counts from 8:00 → 8:59 (4 intervals of 15 min each, summed up)
