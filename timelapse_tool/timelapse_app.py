@@ -65,15 +65,15 @@ def load_data(year):
 # full timestamp list across all years (lightweight — strings only, no sensor data)
 timestamps = load_all_timestamps()
 
-# derive the current year from the active timestamp; load only that year's full data
-current_year = int(timestamps[st.session_state.time_index][:4])
-df = load_data(current_year)
-
 # these variables persist across reruns
 if 'time_index' not in st.session_state:
     st.session_state.time_index = 0
 if 'is_playing' not in st.session_state:
     st.session_state.is_playing = True
+
+# derive the current year from the active timestamp; load only that year's full data
+current_year = int(timestamps[st.session_state.time_index][:4])
+df = load_data(current_year)
 
 # list of all possible dates and times from the dataset, used for the controls and display
 dt_timestamps = pd.to_datetime(timestamps)
