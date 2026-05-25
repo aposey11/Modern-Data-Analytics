@@ -54,7 +54,7 @@ def home():
 
 pg = st.navigation([
     st.Page(home, title="Home", icon="🏠", default=True),
-    st.Page("weather_model/slider.py", title="Weather Simulation", icon="🌤️"),
+    st.Page("weather_model/slider_weather.py", title="Weather Simulation", icon="🌤️"),
     st.Page("timelapse_tool/timelapse_app.py", title="Cycling Timelapse", icon="🚴"),
     st.Page("accident_model/07_GTRI_dashboard.py", title="Accident Risk", icon="⚠️"),
     st.Page("model_cluster/app.py", title="Cluster Analysis", icon="🔵"),
