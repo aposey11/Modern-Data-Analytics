@@ -9,11 +9,9 @@ __pycache__/
 data-*.csv
 richtingen.csv
 
-
-# Generated intermediate datasets — produced by running the pipeline scripts
-
-# XGBoost pickle models — use .json format instead
-*.pkl
+# Large intermediate training datasets — not needed at runtime
+accident_model/gtri_bicycle_data_prepared.parquet
+accident_model/OPENDATA_MAP_2017-2024.xlsx
 
 # XGBoost pickle models — use .json format instead
 *.pkl
