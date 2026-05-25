@@ -156,7 +156,7 @@ with map_col:
     # these starting params should give the best view of Flanders to include all sites and exclude most other places nearby
     view_state = pdk.ViewState(latitude=51.1, longitude=4.15, zoom=8)
     final_map = pdk.Deck(layers=[site_layer, text_layer], initial_view_state=view_state, map_style="light", tooltip={"html": "<b style='font-size: 14px;'>{name}</b><br/>IN: <b>{IN}</b> | OUT: <b>{OUT}</b>"})
-    st.pydeck_chart(final_map, height=700, width='stretch')
+    st.pydeck_chart(final_map)
 
 # actual animation loop
 if st.session_state.is_playing:
