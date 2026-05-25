@@ -53,7 +53,7 @@ chart = pdk.Deck(
 )
 
 with col_map:
-    st.pydeck_chart(chart, on_select='rerun', selection_mode='multi-object')
+    st.pydeck_chart(chart, on_select='rerun', selection_mode='multi-object', height=700, width='stretch')
 
 # ---------- Descriptions ----------
 st.write('**:blue[Cluster 0]** is the second lowest in terms of cycling counts, but the difference between it and cluster 1 is notable. These clusters are located at the entry corridors to large cities like Bruges and Ghent. From this it appears that the number of cyclists commuting into these towns is low, which could be due to alternative modes of transportation like busses or trains carrying the majority of commuters into the city.')

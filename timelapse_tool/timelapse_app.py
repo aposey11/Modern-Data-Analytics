@@ -59,11 +59,16 @@ year_from = st.sidebar.selectbox("Show data from year", available_years, index=l
 df = load_data(year_from)
 timestamps = sorted(df['time_from'].unique())
 
-# these variables perist across reruns
+# these variables persist across reruns
 if 'time_index' not in st.session_state:
     st.session_state.time_index = 0
 if 'is_playing' not in st.session_state:
     st.session_state.is_playing = True
+
+# clamp index to valid range — prevents crash when switching to a year
+# with fewer timestamps (e.g. 2019 starts in August, not January)
+if st.session_state.time_index >= len(timestamps):
+    st.session_state.time_index = 0
 
 # list of all possible dates and times from the dataset, used for the controls and display
 dt_timestamps = pd.to_datetime(timestamps)
@@ -146,7 +151,7 @@ with map_col:
     # these starting params should give the best view of Flanders to include all sites and exclude most other places nearby
     view_state = pdk.ViewState(latitude=51.1, longitude=4.15, zoom=8)
     final_map = pdk.Deck(layers=[site_layer, text_layer], initial_view_state=view_state, map_style="light", tooltip={"html": "<b style='font-size: 14px;'>{name}</b><br/>IN: <b>{IN}</b> | OUT: <b>{OUT}</b>"})
-    st.pydeck_chart(final_map)
+    st.pydeck_chart(final_map, height=700, width='stretch')
 
 # actual animation loop
 if st.session_state.is_playing:

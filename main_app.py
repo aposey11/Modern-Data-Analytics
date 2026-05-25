@@ -50,7 +50,6 @@ def home():
             <div class="nav-card-icon">{c['icon']}</div>
             <div class="nav-card-title">{c['title']}</div>
             <div class="nav-card-desc">{c['desc']}</div>
-            <div class="nav-card-cta">Open →</div>
         </a>
         """
         for c in cards
@@ -87,7 +86,6 @@ def home():
         .nav-card-icon  {{ font-size: 1.8rem; line-height: 1; }}
         .nav-card-title {{ font-size: 1rem; font-weight: 700; margin-top: 0.2rem; }}
         .nav-card-desc  {{ font-size: 0.87rem; color: grey; line-height: 1.55; flex: 1; }}
-        .nav-card-cta   {{ font-size: 0.85rem; color: #1f77b4; margin-top: 0.6rem; font-weight: 500; }}
         </style>
         <div class="nav-cards">{card_items}</div>
         """,
@@ -100,7 +98,7 @@ def home():
 
 pg = st.navigation([
     st.Page(home, title="Home", icon="🏠", default=True),
-    st.Page("weather_model/slider_weather.py",       title="Weather Simulation",       icon="🌤️", url_path="weather"),
+    st.Page("weather_model/weather_hub.py",           title="Weather Simulation",       icon="🌤️", url_path="weather"),
     st.Page("timelapse_tool/timelapse_app.py",        title="Cycling Timelapse",        icon="🚴",  url_path="timelapse"),
     st.Page("accident_model/07_GTRI_dashboard.py",    title="Accident Risk",            icon="⚠️",  url_path="accident-risk"),
     st.Page("model_cluster/app.py",                   title="Cluster Analysis",         icon="🔵",  url_path="clusters"),

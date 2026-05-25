@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import os
+from itertools import combinations
 from scipy import stats
 
 _DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -93,6 +94,60 @@ def load_city_daily(city: str) -> pd.DataFrame:
 
 def fmt_p(p: float) -> str:
     return "p < 0.0001" if p < 0.0001 else f"p = {p:.4f}"
+
+
+def dunn_posthoc(groups: list[np.ndarray], labels: list[str]) -> pd.DataFrame:
+    """
+    Dunn's post-hoc test with Holm–Bonferroni correction.
+
+    Performs all pairwise comparisons on the combined ranks of the input groups
+    (the non-parametric equivalent of Tukey's HSD after a significant Kruskal-Wallis).
+
+    Parameters
+    ----------
+    groups : list of 1-D arrays (NaN already removed)
+    labels : matching list of group name strings
+
+    Returns
+    -------
+    DataFrame with columns: Group A, Group B, z, p_raw, p_adj
+    """
+    all_data = np.concatenate(groups)
+    N        = len(all_data)
+    # Rank all observations together (average ranks for ties)
+    all_ranks = stats.rankdata(all_data)
+
+    # Mean rank and size per group
+    mean_ranks, sizes = [], []
+    idx = 0
+    for g in groups:
+        n = len(g)
+        mean_ranks.append(all_ranks[idx : idx + n].mean())
+        sizes.append(n)
+        idx += n
+
+    # Pairwise z-scores
+    rows = []
+    for (i, j) in combinations(range(len(groups)), 2):
+        se    = np.sqrt((N * (N + 1) / 12.0) * (1.0 / sizes[i] + 1.0 / sizes[j]))
+        z     = (mean_ranks[i] - mean_ranks[j]) / se
+        p_raw = float(2 * stats.norm.sf(abs(z)))
+        rows.append({"Group A": labels[i], "Group B": labels[j], "z": z, "p_raw": p_raw})
+
+    df = pd.DataFrame(rows)
+
+    # Holm–Bonferroni step-down correction
+    m       = len(df)
+    order   = df["p_raw"].argsort().values          # indices sorted by ascending p_raw
+    p_adj   = np.empty(m)
+    running = 0.0
+    for rank, orig_idx in enumerate(order):
+        corrected  = df.loc[orig_idx, "p_raw"] * (m - rank)
+        running    = max(running, corrected)         # step-down monotonicity
+        p_adj[orig_idx] = min(1.0, running)
+
+    df["p_adj"] = p_adj
+    return df
 
 # ── UI controls ───────────────────────────────────────────────────────────────
 
@@ -345,25 +400,47 @@ for site_id in selected_ids:
             help="Total change in avg daily cyclists from the before period to the permanent phase",
         )
 
-        # Significance tests — pre vs trial, and trial vs permanent
+        # ── Significance testing: Kruskal-Wallis → Dunn's post-hoc ─────────────
         pre_w   = weekly[weekly.index < KORTRIJK_TRIAL].dropna()
         trial_w = weekly[(weekly.index >= KORTRIJK_TRIAL) & (weekly.index < KORTRIJK_PERMANENT)].dropna()
         perm_w  = weekly[weekly.index >= KORTRIJK_PERMANENT].dropna()
 
-        test_rows = []
-        if len(pre_w) >= 5 and len(trial_w) >= 5:
-            _, p1 = stats.mannwhitneyu(pre_w, trial_w, alternative="two-sided")
-            test_rows.append(("Before vs trial",       p1))
-        if len(trial_w) >= 5 and len(perm_w) >= 5:
-            _, p2 = stats.mannwhitneyu(trial_w, perm_w, alternative="two-sided")
-            test_rows.append(("Trial vs permanent", p2))
+        enough = len(pre_w) >= 5 and len(trial_w) >= 5 and len(perm_w) >= 5
+        if enough:
+            # Step 1: omnibus Kruskal-Wallis across all three phases
+            stat_kw, p_kw = stats.kruskal(pre_w, trial_w, perm_w)
+            kw_label = fmt_p(p_kw)
 
-        for label, p in test_rows:
-            p_label = fmt_p(p)
-            if p < 0.05:
-                st.success(f"✅ {label}: significant difference (Wilcoxon rank-sum, {p_label})")
+            if p_kw >= 0.05:
+                st.info(
+                    f"ℹ️ Kruskal-Wallis omnibus test found no significant difference across "
+                    f"the three phases ({kw_label}). Post-hoc tests are not warranted."
+                )
             else:
-                st.info(f"ℹ️ {label}: no significant difference (Wilcoxon rank-sum, {p_label})")
+                st.success(
+                    f"✅ Kruskal-Wallis: at least one phase differs significantly "
+                    f"(H = {stat_kw:.2f}, {kw_label})"
+                )
+
+                # Step 2: Dunn's post-hoc with Holm–Bonferroni correction
+                dunn = dunn_posthoc(
+                    [pre_w.values, trial_w.values, perm_w.values],
+                    ["Before", "Trial", "Permanent"],
+                )
+                for _, row in dunn.iterrows():
+                    label   = f"{row['Group A']} vs {row['Group B']}"
+                    p_raw   = fmt_p(row["p_raw"])
+                    p_adj   = fmt_p(row["p_adj"])
+                    sig     = row["p_adj"] < 0.05
+                    icon    = "✅" if sig else "ℹ️"
+                    outcome = "significant" if sig else "not significant"
+                    fn      = st.success if sig else st.info
+                    fn(
+                        f"{icon} **{label}**: {outcome} after correction  "
+                        f"(p_raw {p_raw} → p_adj {p_adj}, Holm–Bonferroni)"
+                    )
+        else:
+            st.warning("⚠️ Insufficient data in one or more phases for significance testing (need ≥ 5 weeks each).")
 
         with st.expander("ℹ️ How is this measured?"):
             st.markdown(
@@ -376,11 +453,13 @@ for site_id in selected_ids:
                 "that the three periods span different seasons and weather conditions — "
                 "the % vs before figures use raw observed counts, while the model baseline "
                 "provides a weather-adjusted reference.\n\n"
-                "**Statistical tests:** Two pairwise **Wilcoxon rank-sum** tests (Mann-Whitney U) are run on"
-                "weekly-aggregated residuals: before vs trial, and trial vs permanent. "
-                "Weekly aggregation reduces day-to-day autocorrelation. A very small p-value "
-                "indicates the distributions are statistically distinct; the magnitude is "
-                "shown in the metrics above."
+                "**Statistical tests:** Weekly-mean residuals are tested in two steps to control "
+                "the family-wise Type I error rate. First, a **Kruskal-Wallis** omnibus H-test "
+                "checks whether *any* of the three phases differ. Only if that is significant "
+                "(p < 0.05) do we proceed to **Dunn's post-hoc test**, which computes all three "
+                "pairwise z-statistics on the combined ranks and applies **Holm–Bonferroni** "
+                "correction to the adjusted p-values. Weekly aggregation reduces day-to-day "
+                "autocorrelation that would otherwise inflate the effective sample size."
             )
 
     st.markdown("---")
