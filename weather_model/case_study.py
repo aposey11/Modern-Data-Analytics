@@ -63,7 +63,7 @@ MODEL_FEATURES = [
 @st.cache_resource
 def load_model() -> XGBRegressor:
     m = XGBRegressor()
-    m.load_model(os.path.join(_DIR, "weather_bike_model.ubj"))
+    m.load_model(os.path.join(_DIR, "weather_bike_model.json"))
     return m
 
 

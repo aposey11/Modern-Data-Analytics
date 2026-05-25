@@ -17,7 +17,7 @@ st.title("🚴 Weather-Cycling Simulation Map")
 @st.cache_resource
 def load_model():
     model = XGBRegressor()
-    model.load_model(os.path.join(_DIR, "weather_bike_model.ubj"))
+    model.load_model(os.path.join(_DIR, "weather_bike_model.json"))
     return model
 
 model = load_model()
