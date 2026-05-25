@@ -45,18 +45,13 @@ if not os.path.isdir(processed_folder):
     with st.spinner("First launch: pre-processing data for faster future loads..."):
         build_processed_data()
 
-# cached per year_from value — switching years reuses the cache instead of reloading
 @st.cache_data(show_spinner="Loading data...")
-def load_data(year_from: int):
+def load_data():
     processed_folder = os.path.join(_DIR, "Processed Data")
-    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet") and int(f.split("-")[1].split(".")[0]) >= year_from]
+    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet")]
     return pd.concat([pd.read_parquet(os.path.join(processed_folder, f)) for f in data_files], ignore_index=True)
 
-# year selector in the sidebar — each unique value is cached separately by @st.cache_data
-available_years = sorted({int(f.split("-")[1]) for f in os.listdir(os.path.join(_DIR, "Data"))})
-year_from = st.sidebar.selectbox("Show data from year", available_years, index=len(available_years) - 2)
-
-df = load_data(year_from)
+df = load_data()
 timestamps = sorted(df['time_from'].unique())
 
 # these variables persist across reruns
@@ -64,11 +59,6 @@ if 'time_index' not in st.session_state:
     st.session_state.time_index = 0
 if 'is_playing' not in st.session_state:
     st.session_state.is_playing = True
-
-# clamp index to valid range — prevents crash when switching to a year
-# with fewer timestamps (e.g. 2019 starts in August, not January)
-if st.session_state.time_index >= len(timestamps):
-    st.session_state.time_index = 0
 
 # list of all possible dates and times from the dataset, used for the controls and display
 dt_timestamps = pd.to_datetime(timestamps)
