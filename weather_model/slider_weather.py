@@ -109,6 +109,6 @@ def show():
     )
 
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=650)
-    st.plotly_chart(fig, width='stretch')
+    st.plotly_chart(fig, width='stretch', config={"responsive": True})
 
     # let's say if hour is 8am = all counts from 8:00 → 8:59 (4 intervals of 15 min each, summed up)
