@@ -45,23 +45,29 @@ if not os.path.isdir(processed_folder):
     with st.spinner("First launch: pre-processing data for faster future loads..."):
         build_processed_data()
 
+@st.cache_data(show_spinner=False)
+def load_all_timestamps():
+    """Read only the time_from column across all years — tiny memory footprint."""
+    processed_folder = os.path.join(_DIR, "Processed Data")
+    files = sorted(f for f in os.listdir(processed_folder) if f.endswith(".parquet"))
+    return sorted(pd.concat(
+        [pd.read_parquet(os.path.join(processed_folder, f), columns=["time_from"]) for f in files],
+        ignore_index=True
+    )["time_from"].unique())
+
 @st.cache_data(show_spinner="Loading data...", max_entries=1)
 def load_data(year):
+    """Load one year's full data. max_entries=1 ensures only one year is ever in RAM."""
     processed_folder = os.path.join(_DIR, "Processed Data")
     data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet") and int(f.split("-")[1].split(".")[0]) == year]
     return pd.concat([pd.read_parquet(os.path.join(processed_folder, f)) for f in data_files], ignore_index=True)
 
-available_years = sorted({int(f.split("-")[1]) for f in os.listdir(os.path.join(_DIR, "Data"))})
+# full timestamp list across all years (lightweight — strings only, no sensor data)
+timestamps = load_all_timestamps()
 
-# year selector — placed before any downstream computation so the time_index reset
-# happens before timestamps / current_dt are derived (prevents IndexError and ValueError)
-selected_year = st.selectbox("Select Year", available_years, index=len(available_years) - 1)
-if st.session_state.get('selected_year') != selected_year:
-    st.session_state.selected_year = selected_year
-    st.session_state.time_index = 0
-
-df = load_data(selected_year)
-timestamps = sorted(df['time_from'].unique())
+# derive the current year from the active timestamp; load only that year's full data
+current_year = int(timestamps[st.session_state.time_index][:4])
+df = load_data(current_year)
 
 # these variables persist across reruns
 if 'time_index' not in st.session_state:
