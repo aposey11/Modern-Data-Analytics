@@ -9,7 +9,6 @@ import requests
 from datetime import datetime, timedelta
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
-_FORECAST_CACHE = os.path.join(_DIR, "forecast_cache.json")
 
 @st.cache_resource
 def load_model():
@@ -32,20 +31,11 @@ def load_sites():
     sites = sites.rename(columns={"long": "lon"})
     return sites
 
-def _save_forecast_cache(df: pd.DataFrame):
-    """Persist a successful forecast to disk so it survives app restarts."""
-    df.to_json(_FORECAST_CACHE, orient="records", date_format="iso")
-
-def _load_forecast_cache() -> pd.DataFrame | None:
-    """Load the last saved forecast from disk. Returns None if unavailable."""
-    if not os.path.exists(_FORECAST_CACHE):
-        return None
-    try:
-        df = pd.read_json(_FORECAST_CACHE, orient="records")
-        df["hour_timestamp"] = pd.to_datetime(df["hour_timestamp"])
-        return df
-    except Exception:
-        return None
+@st.cache_resource
+def _forecast_store():
+    """In-memory singleton that holds the last successful forecast.
+    Survives reruns and multi-user sessions for the lifetime of the server process."""
+    return {"df": None}
 
 # Fetch 7-day forecast from Open-Meteo; refreshes every 6 hours
 @st.cache_data(ttl=6*3600)
@@ -69,7 +59,7 @@ def fetch_forecast(lat=51.05, lon=3.72):
         "wind_speed":     data["hourly"]["wind_speed_10m"],
         "cloud_cover":    data["hourly"]["cloud_cover"]
     })
-    _save_forecast_cache(df)  # persist to disk on every successful fetch
+    _forecast_store()["df"] = df  # update in-memory fallback on every successful fetch
     return df
 
 
@@ -82,7 +72,7 @@ def show():
         forecast = fetch_forecast()
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 429:
-            forecast = _load_forecast_cache()
+            forecast = _forecast_store()["df"]
             if forecast is not None:
                 st.info("⏳ Weather API is temporarily rate-limited — showing the last cached forecast.")
             else:
@@ -92,7 +82,7 @@ def show():
             st.error(f"Weather API returned an error: {e}")
             st.stop()
     except requests.exceptions.RequestException as e:
-        forecast = _load_forecast_cache()
+        forecast = _forecast_store()["df"]
         if forecast is not None:
             st.info("⚠️ Could not reach the weather API — showing the last cached forecast.")
         else:
@@ -178,7 +168,7 @@ def show():
         map_style="carto-darkmatter"
     )
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=550)
-    st.plotly_chart(fig, width='stretch', config={"responsive": True})
+    st.plotly_chart(fig, use_container_width=True, config={"responsive": True})
 
     st.markdown("<div style='margin-top: 80px;'></div>", unsafe_allow_html=True)
     st.subheader("🌤️ Weather conditions for selected hour")
