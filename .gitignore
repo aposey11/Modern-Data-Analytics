@@ -11,3 +11,9 @@ richtingen.csv
 
 
 # Generated intermediate datasets — produced by running the pipeline scripts
+
+# XGBoost pickle models — use .json format instead
+*.pkl
+
+# XGBoost pickle models — use .json format instead
+*.pkl

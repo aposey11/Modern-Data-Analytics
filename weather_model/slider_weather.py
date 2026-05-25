@@ -41,7 +41,7 @@ def load_sites():
     "datum_van"
  ]
     sites = pd.read_csv(
-        os.path.join(_DIR, "sites.csv"),
+        os.path.join(_DIR, "Data", "sites.csv"),
         names=cols,
         header=None
     )

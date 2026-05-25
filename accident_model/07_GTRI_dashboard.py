@@ -184,11 +184,16 @@ st.caption(
 # ==========================================
 m = folium.Map(location=[51.00, 4.35], zoom_start=9, tiles="cartodbpositron")
 
+# Green extends to 1.25× — sites slightly above the mathematical average (1.0×)
+# are not meaningfully elevated and shouldn't read as amber.
+GREEN_CUTOFF = 1.25
+orange_start = GREEN_CUTOFF * 2  # = 2.50 — yellow band spans the same width as green
+LEGEND_MAX   = max(custom_threshold + 2.0, 10.0)
+
 colormap = cm.StepColormap(
     colors=['#228B22', '#FFD700', '#FF8C00', '#FF0000'],
-    index=[0.0, 1.0, 1.0 + ((custom_threshold - 1.0) * 0.4), custom_threshold],
-    vmin=0.0, vmax=max(custom_threshold + 2.0, 10.0),
-    caption=f'Relative Risk (Red >= {custom_threshold}x)'
+    index=[0.0, GREEN_CUTOFF, orange_start, custom_threshold],
+    vmin=0.0, vmax=LEGEND_MAX,
 )
 
 for _, row in results.iterrows():
@@ -215,5 +220,106 @@ for _, row in results.iterrows():
             )
         ).add_to(m)
 
-colormap.add_to(m)
+# Custom legend — branca's built-in legend ignores tick_labels and always renders
+# evenly-spaced ticks between vmin/vmax, so we inject our own HTML instead.
+_w1 = GREEN_CUTOFF / LEGEND_MAX * 100          # % width of green band
+_w2 = (orange_start - GREEN_CUTOFF) / LEGEND_MAX * 100   # % width of yellow band
+_w3 = (custom_threshold - orange_start) / LEGEND_MAX * 100  # % width of orange band
+_w4 = (LEGEND_MAX - custom_threshold) / LEGEND_MAX * 100    # % width of red band
+
+_legend_html = f"""
+<div style="
+    position: fixed;
+    top: 12px; right: 60px;
+    z-index: 9999;
+    background: white;
+    padding: 8px 12px 6px 12px;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.25);
+    font-size: 11px;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.15);
+    min-width: 220px;
+">
+  <div style="font-weight:600; margin-bottom:5px;">
+      Relative Risk&nbsp;&nbsp;<span style="color:#888; font-weight:400;">(Red ≥ {custom_threshold}×)</span>
+  </div>
+  <!-- Colour bar -->
+  <div style="display:flex; height:14px; border-radius:2px; overflow:hidden; margin-bottom:3px;">
+    <div style="width:{_w1:.1f}%; background:#228B22;"></div>
+    <div style="width:{_w2:.1f}%; background:#FFD700;"></div>
+    <div style="width:{_w3:.1f}%; background:#FF8C00;"></div>
+    <div style="width:{_w4:.1f}%; background:#FF0000;"></div>
+  </div>
+  <!-- Tick labels positioned proportionally -->
+  <div style="position:relative; height:14px;">
+    <span style="position:absolute; left:0;">0</span>
+    <span style="position:absolute; left:{_w1:.1f}%; transform:translateX(-50%);">{GREEN_CUTOFF}</span>
+    <span style="position:absolute; left:{(_w1+_w2):.1f}%; transform:translateX(-50%);">{orange_start}</span>
+    <span style="position:absolute; left:{(_w1+_w2+_w3):.1f}%; transform:translateX(-50%);">{custom_threshold}</span>
+    <span style="position:absolute; right:0;">{LEGEND_MAX:.0f}+</span>
+  </div>
+</div>
+"""
+m.get_root().html.add_child(folium.Element(_legend_html))
 st_folium(m, width=1400, height=700)
+
+# ==========================================
+# RISK RANKING TABLES
+# ==========================================
+st.markdown("---")
+st.subheader("Site Risk Rankings")
+st.caption("Rankings update live with the sidebar sliders.")
+
+display_cols = {
+    "naam_site":                    "Site",
+    "relative_risk":                "Risk (×baseline)",
+    "historical_accidents_250m":    "Accidents ≤250 m",
+    "spatial_risk_score":           "Spatial score",
+}
+
+col_high, col_low = st.columns(2)
+
+with col_high:
+    st.markdown("#### 🔴 Top 10 Highest Risk")
+    top10 = (
+        results.nlargest(10, "relative_risk")
+        [list(display_cols.keys())]
+        .rename(columns=display_cols)
+        .reset_index(drop=True)
+    )
+    top10.index = top10.index + 1          # rank starts at 1
+    top10["Risk (×baseline)"] = top10["Risk (×baseline)"].map(lambda x: f"{x:.2f}×")
+    top10["Spatial score"]    = top10["Spatial score"].map(lambda x: f"{x:.3f}")
+    st.dataframe(
+        top10,
+        use_container_width=True,
+        column_config={
+            "Site":              st.column_config.TextColumn("Site", width="medium"),
+            "Risk (×baseline)":  st.column_config.TextColumn("Risk (×avg)", width="small"),
+            "Accidents ≤250 m":  st.column_config.NumberColumn("Acc. ≤250 m", width="small"),
+            "Spatial score":     st.column_config.TextColumn("Spatial", width="small"),
+        },
+    )
+
+with col_low:
+    st.markdown("#### 🟢 Top 10 Lowest Risk")
+    bot10 = (
+        results.nsmallest(10, "relative_risk")
+        [list(display_cols.keys())]
+        .rename(columns=display_cols)
+        .reset_index(drop=True)
+    )
+    bot10.index = bot10.index + 1
+    bot10["Risk (×baseline)"] = bot10["Risk (×baseline)"].map(lambda x: f"{x:.2f}×")
+    bot10["Spatial score"]    = bot10["Spatial score"].map(lambda x: f"{x:.3f}")
+    st.dataframe(
+        bot10,
+        use_container_width=True,
+        column_config={
+            "Site":              st.column_config.TextColumn("Site", width="medium"),
+            "Risk (×baseline)":  st.column_config.TextColumn("Risk (×avg)", width="small"),
+            "Accidents ≤250 m":  st.column_config.NumberColumn("Acc. ≤250 m", width="small"),
+            "Spatial score":     st.column_config.TextColumn("Spatial", width="small"),
+        },
+    )
