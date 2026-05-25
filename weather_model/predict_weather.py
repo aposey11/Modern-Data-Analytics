@@ -168,7 +168,7 @@ def show():
         map_style="carto-darkmatter"
     )
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=550)
-    st.plotly_chart(fig, use_container_width=True, config={"responsive": True})
+    st.plotly_chart(fig, width='stretch', config={"responsive": True})
 
     st.markdown("<div style='margin-top: 80px;'></div>", unsafe_allow_html=True)
     st.subheader("🌤️ Weather conditions for selected hour")
