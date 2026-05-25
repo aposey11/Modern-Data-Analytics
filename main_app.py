@@ -93,7 +93,7 @@ def home():
     )
 
     st.divider()
-    st.caption("Click any card above to open that tool, or use the sidebar to navigate.")
+    
 
 
 pg = st.navigation([
