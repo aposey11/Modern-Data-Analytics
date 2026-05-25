@@ -41,7 +41,7 @@ def fetch_forecast(lat=51.05, lon=3.72):
         "forecast_days": 7,
         "timezone": "Europe/Brussels"
     }
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=10)
     response.raise_for_status()
     data = response.json()
     return pd.DataFrame({
@@ -55,9 +55,20 @@ def fetch_forecast(lat=51.05, lon=3.72):
 
 
 def show():
-    model    = load_model()
-    sites    = load_sites()
-    forecast = fetch_forecast()
+    model  = load_model()
+    sites  = load_sites()
+
+    try:
+        forecast = fetch_forecast()
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 429:
+            st.warning("The weather forecast API is temporarily rate-limited. Please wait a minute and refresh the page.")
+        else:
+            st.error(f"Weather API returned an error: {e}")
+        st.stop()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Could not reach the weather forecast API: {e}")
+        st.stop()
 
     st.title("🚴 7-Day Cycling Forecast")
 
