@@ -11,7 +11,7 @@ def home():
     )
     st.divider()
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.subheader("🌤️ Weather Simulation")
@@ -41,6 +41,13 @@ def home():
             "traffic patterns and site characteristics."
         )
 
+    with col5:
+        st.subheader("🔬 Case Studies")
+        st.write(
+            "Measure the impact of urban circulation plan changes in Aalst and "
+            "Kortrijk by comparing observed cyclist counts against a weather-normalised baseline."
+        )
+
     st.divider()
     st.caption("Use the sidebar to navigate between tools.")
 
@@ -51,5 +58,6 @@ pg = st.navigation([
     st.Page("timelapse_tool/timelapse_app.py", title="Cycling Timelapse", icon="🚴"),
     st.Page("accident_model/07_GTRI_dashboard.py", title="Accident Risk", icon="⚠️"),
     st.Page("model_cluster/app.py", title="Cluster Analysis", icon="🔵"),
+    st.Page("weather_model/case_study.py", title="Case Studies", icon="🔬"),
 ])
 pg.run()
