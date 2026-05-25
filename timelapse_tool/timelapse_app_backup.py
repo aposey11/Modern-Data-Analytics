@@ -45,22 +45,15 @@ if not os.path.isdir(processed_folder):
     with st.spinner("First launch: pre-processing data for faster future loads..."):
         build_processed_data()
 
-@st.cache_data(show_spinner="Loading data...", max_entries=1)
-def load_data(year):
+@st.cache_data(show_spinner="Loading data...")
+def load_data(year_from):
     processed_folder = os.path.join(_DIR, "Processed Data")
-    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet") and int(f.split("-")[1].split(".")[0]) == year]
+    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet") and int(f.split("-")[1].split(".")[0]) >= year_from]
     return pd.concat([pd.read_parquet(os.path.join(processed_folder, f)) for f in data_files], ignore_index=True)
 
+# load only the most recent year to keep memory usage manageable
 available_years = sorted({int(f.split("-")[1]) for f in os.listdir(os.path.join(_DIR, "Data"))})
-
-# year selector — placed before any downstream computation so the time_index reset
-# happens before timestamps / current_dt are derived (prevents IndexError and ValueError)
-selected_year = st.selectbox("Select Year", available_years, index=len(available_years) - 1)
-if st.session_state.get('selected_year') != selected_year:
-    st.session_state.selected_year = selected_year
-    st.session_state.time_index = 0
-
-df = load_data(selected_year)
+df = load_data(available_years[-1])
 timestamps = sorted(df['time_from'].unique())
 
 # these variables persist across reruns
