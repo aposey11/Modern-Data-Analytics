@@ -46,12 +46,14 @@ if not os.path.isdir(processed_folder):
         build_processed_data()
 
 @st.cache_data(show_spinner="Loading data...")
-def load_data():
+def load_data(year_from):
     processed_folder = os.path.join(_DIR, "Processed Data")
-    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet")]
+    data_files = [f for f in os.listdir(processed_folder) if f.endswith(".parquet") and int(f.split("-")[1].split(".")[0]) >= year_from]
     return pd.concat([pd.read_parquet(os.path.join(processed_folder, f)) for f in data_files], ignore_index=True)
 
-df = load_data()
+# load only the most recent year to keep memory usage manageable
+available_years = sorted({int(f.split("-")[1]) for f in os.listdir(os.path.join(_DIR, "Data"))})
+df = load_data(available_years[-1])
 timestamps = sorted(df['time_from'].unique())
 
 # these variables persist across reruns
