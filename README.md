@@ -2,8 +2,6 @@
 
 *MDA Assignment — Group 12 (On-campus)*
 
-Understanding our GitHub Repository:
-
 ## Overview
 
 This repository contains a multi-tool Cycling Analytics Platform for Flanders, built on AWV bike sensor data, Statbel accident records, and Open-Meteo weather data covering the period 2019–2026. The platform is served as a single Streamlit application (`main_app.py`) that routes between four independent tools: an accident risk model, a weather simulation, a cycling timelapse, and a cluster analysis. Each tool lives in its own subfolder with its own requirements file.
